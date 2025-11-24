@@ -76,11 +76,6 @@ def thumb_direction_up_down(lm):
     pw = palm_width(lm)
     return dy < -0.15 * pw, dy > 0.15 * pw
 
-def is_korean_love(lm):
-    pw = palm_width(lm)
-    d = dist_norm(lm[4], lm[8])
-    others_folded = all(not is_finger_straight(lm, FINGERS[f]) for f in ["middle", "ring", "pinky"])
-    return (d < LOVE_DIST_FACTOR * pw) and others_folded
 
 def classify_single_hand(lm):
     states = finger_states(lm)
@@ -91,19 +86,20 @@ def classify_single_hand(lm):
         if thumb_up: return "Good", states
         if thumb_down: return "Bad", states
     if states == [0,1,0,0,0]: return "Point", states
+    if states == [0,1,1,0,0]: return "Peace", states
+
     if s == 0: return "Run", states
-    if is_korean_love(lm): return "Korean Love", states
-    if s == 5: return "Open", states
+    if s == 5: return "Stop", states
     return "Unknown", states
 
 def classify_two_hands(per_hand):
     labels = [lab for lab,_ in per_hand]
     sums   = [sum(st) for _,st in per_hand]
 
-    if len(per_hand)==2 and labels[0]=="Open" and labels[1]=="Open" and sums[0]==5 and sums[1]==5:
+    if len(per_hand)==2 and labels[0]=="Stop" and labels[1]=="Stop" and sums[0]==5 and sums[1]==5:
         return "Stop", 10
 
-    priority = ["Korean Love", "Good", "Bad", "Point", "Run", "Open"]
+    priority = ["Good", "Bad", "Point", "Peace", "Run", "Stop"]
     for p in priority:
         if p in labels: return p, sum(sums)
 
